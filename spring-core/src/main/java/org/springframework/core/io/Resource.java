@@ -121,7 +121,7 @@ public interface Resource extends InputStreamSource {
 	String getFilename();
 
 	/**
-	 * 资源的描述
+	 * 返回此资源的描述，用于处理资源时的错误输出。这通常是完全限定的文件名或资源的实际URL。
 	 */
 	String getDescription();
 

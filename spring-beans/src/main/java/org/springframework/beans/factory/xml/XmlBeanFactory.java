@@ -19,6 +19,7 @@ package org.springframework.beans.factory.xml;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
 /**
@@ -53,26 +54,18 @@ import org.springframework.core.io.Resource;
 @Deprecated
 @SuppressWarnings({"serial", "all"})
 public class XmlBeanFactory extends DefaultListableBeanFactory {
-
+	//通过XmlBeanDefinitionReader 扩展对xml资源的解析功能
 	private final XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(this);
 
-
 	/**
-	 * Create a new XmlBeanFactory with the given resource,
-	 * which must be parsable using DOM.
-	 * @param resource the XML resource to load bean definitions from
-	 * @throws BeansException in case of loading or parsing errors
+	 * 构造方法需要指定xml的资源地址
 	 */
 	public XmlBeanFactory(Resource resource) throws BeansException {
 		this(resource, null);
 	}
 
 	/**
-	 * Create a new XmlBeanFactory with the given input stream,
-	 * which must be parsable using DOM.
-	 * @param resource the XML resource to load bean definitions from
-	 * @param parentBeanFactory parent bean factory
-	 * @throws BeansException in case of loading or parsing errors
+	 * 通过XmlBeanDefinitionReader对资源进行解析
 	 */
 	public XmlBeanFactory(Resource resource, BeanFactory parentBeanFactory) throws BeansException {
 		super(parentBeanFactory);
