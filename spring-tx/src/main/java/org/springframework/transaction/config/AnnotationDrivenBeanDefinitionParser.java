@@ -115,11 +115,12 @@ class AnnotationDrivenBeanDefinitionParser implements BeanDefinitionParser {
 
 	/**
 	 * Inner class to just introduce an AOP framework dependency when actually in proxy mode.
+	 * https://www.cnblogs.com/java-chen-hao/p/11635380.html
 	 */
 	private static class AopAutoProxyConfigurer {
 
 		public static void configureAutoProxyCreator(Element element, ParserContext parserContext) {
-			// 开启aop
+			// 向IOC注册InfrastructureAdvisorAutoProxyCreator这个类型的Bean
 			AopNamespaceUtils.registerAutoProxyCreatorIfNecessary(parserContext, element);
 
 			String txAdvisorBeanName = TransactionManagementConfigUtils.TRANSACTION_ADVISOR_BEAN_NAME;
@@ -154,6 +155,7 @@ class AnnotationDrivenBeanDefinitionParser implements BeanDefinitionParser {
 				}
 				parserContext.getRegistry().registerBeanDefinition(txAdvisorBeanName, advisorDef);
 
+				// 将上面三个Bean注册进IOC中
 				CompositeComponentDefinition compositeDef = new CompositeComponentDefinition(element.getTagName(), eleSource);
 				compositeDef.addNestedComponent(new BeanComponentDefinition(sourceDef, sourceName));
 				compositeDef.addNestedComponent(new BeanComponentDefinition(interceptorDef, interceptorName));
