@@ -291,10 +291,13 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 * identified as one to proxy by the subclass.
 	 * @see #getAdvicesAndAdvisorsForBean
 	 */
+	//bean初始化成功, 参数, bean:bean实例 beanName:bean在Spring容器中的名字
 	@Override
 	public Object postProcessAfterInitialization(@Nullable Object bean, String beanName) {
 		if (bean != null) {
 			Object cacheKey = getCacheKey(bean.getClass(), beanName);
+			//如果之前调用过getEarlyBeanReference获取包装目标对象到AOP代理对象（如果需要），则不再执行
+			//getEarlyBeanReference 也是创建代理对象, 主要是通过代理来解决循环引用问题
 			if (this.earlyProxyReferences.remove(cacheKey) != bean) {
 				return wrapIfNecessary(bean, beanName, cacheKey);
 			}
@@ -343,7 +346,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			return bean;
 		}
 
-		// Create proxy if we have advice.
+		// Create proxy if we have advice. //注释说的很明白了,如果偶们有advice就创建代理
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
 		if (specificInterceptors != DO_NOT_PROXY) {
 			this.advisedBeans.put(cacheKey, Boolean.TRUE);

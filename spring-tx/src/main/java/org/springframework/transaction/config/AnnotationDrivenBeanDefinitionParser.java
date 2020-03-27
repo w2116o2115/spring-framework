@@ -119,29 +119,31 @@ class AnnotationDrivenBeanDefinitionParser implements BeanDefinitionParser {
 	private static class AopAutoProxyConfigurer {
 
 		public static void configureAutoProxyCreator(Element element, ParserContext parserContext) {
-			//1.启用Spring AOP功能
+			// 开启aop
 			AopNamespaceUtils.registerAutoProxyCreatorIfNecessary(parserContext, element);
 
 			String txAdvisorBeanName = TransactionManagementConfigUtils.TRANSACTION_ADVISOR_BEAN_NAME;
 			if (!parserContext.getRegistry().containsBeanDefinition(txAdvisorBeanName)) {
 				Object eleSource = parserContext.extractSource(element);
 
-				//2. 向Spring注入解析@Transactional注解的处理类
+				//AnnotationTransactionAttributeSource 主要是用来解析注解属性 继承自AbstractFallbackTransactionAttributeSource
+				//主要作用就是解析方法注解, 将事物属性封装成对象缓存起来, 然后如果方法上没注解就去类上或者接口上找~~~
 				RootBeanDefinition sourceDef = new RootBeanDefinition(
 						"org.springframework.transaction.annotation.AnnotationTransactionAttributeSource");
 				sourceDef.setSource(eleSource);
 				sourceDef.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
 				String sourceName = parserContext.getReaderContext().registerWithGeneratedName(sourceDef);
 
-				// 3.向Spring注入处理@Transactional注解的advice.
+				//TransactionInterceptor 一看名字就知道是拦截方法的, 通过拦截方法的调用, 处理事务
 				RootBeanDefinition interceptorDef = new RootBeanDefinition(TransactionInterceptor.class);
 				interceptorDef.setSource(eleSource);
 				interceptorDef.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
-				registerTransactionManager(element, interceptorDef);
+				registerTransactionManager(element, interceptorDef);//这里通过bean name关联事务管理器
 				interceptorDef.getPropertyValues().add("transactionAttributeSource", new RuntimeBeanReference(sourceName));
 				String interceptorName = parserContext.getReaderContext().registerWithGeneratedName(interceptorDef);
 
-				// 4.向Spring注入事务的advisor
+				//BeanFactoryTransactionAttributeSourceAdvisor 事务AOP配置
+				//Pointcut:TransactionAttributeSourcePointcut, advice: TransactionInterceptor
 				RootBeanDefinition advisorDef = new RootBeanDefinition(BeanFactoryTransactionAttributeSourceAdvisor.class);
 				advisorDef.setSource(eleSource);
 				advisorDef.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
