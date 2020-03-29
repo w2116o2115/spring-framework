@@ -30,6 +30,9 @@ import org.springframework.lang.Nullable;
  * @see #setAdviceBeanName
  * @see TransactionInterceptor
  * @see TransactionAttributeSourceAdvisor
+ *
+ * 每个Advisor（增强器）会根据Pointcut（切点）使用ClassFilter判断被代理类是否满足规则；
+ * 使用MethodMatcher判断被代理类是否有方法满足规则
  */
 @SuppressWarnings("serial")
 public class BeanFactoryTransactionAttributeSourceAdvisor extends AbstractBeanFactoryPointcutAdvisor {

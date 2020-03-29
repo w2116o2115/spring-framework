@@ -299,6 +299,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			//如果之前调用过getEarlyBeanReference获取包装目标对象到AOP代理对象（如果需要），则不再执行
 			//getEarlyBeanReference 也是创建代理对象, 主要是通过代理来解决循环引用问题
 			if (this.earlyProxyReferences.remove(cacheKey) != bean) {
+				//// 如果需要，为 bean 生成代理对象
 				return wrapIfNecessary(bean, beanName, cacheKey);
 			}
 		}
@@ -341,6 +342,10 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		if (Boolean.FALSE.equals(this.advisedBeans.get(cacheKey))) {
 			return bean;
 		}
+		/*
+         * 如果是基础设施类（Pointcut、Advice、Advisor 等接口的实现类），或是应该跳过的类，
+         * 则不应该生成代理，此时直接返回 bean
+         */
 		if (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) {
 			this.advisedBeans.put(cacheKey, Boolean.FALSE);
 			return bean;
@@ -348,11 +353,16 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 
 		// Create proxy if we have advice. //注释说的很明白了,如果偶们有advice就创建代理
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
+		//则为 bean 生成代理对象，否则直接返回 bean
 		if (specificInterceptors != DO_NOT_PROXY) {
 			this.advisedBeans.put(cacheKey, Boolean.TRUE);
 			Object proxy = createProxy(
 					bean.getClass(), beanName, specificInterceptors, new SingletonTargetSource(bean));
 			this.proxyTypes.put(cacheKey, proxy.getClass());
+			/*
+             * 返回代理对象，此时 IOC 容器输入 bean，得到 proxy。此时，
+             * beanName 对应的 bean 是代理对象，而非原始的 bean
+             */
 			return proxy;
 		}
 
