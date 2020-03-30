@@ -332,16 +332,16 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 
 		//1. 获取@Transactional注解的相关参数
 		TransactionAttributeSource tas = getTransactionAttributeSource();
-		// 2. 获取事务管理器
+		// 2. 解析注解  获取事务注解属性  RuleBasedTransactionAttribute
 		final TransactionAttribute txAttr = (tas != null ? tas.getTransactionAttribute(method, targetClass) : null);
 		//它保存着当前的数据源连接，对外提供对该数据源的事务提交回滚操作接口，同时实现了事务相关操作的方法。一个数据源DataSource需要一个事务管理器。
-		final PlatformTransactionManager tm = determineTransactionManager(txAttr);
+		final PlatformTransactionManager tm = determineTransactionManager(txAttr); //获取beanFactory中的事务管理器
 		//目标方法唯一标识（类.方法，如service.UserServiceImpl.save）
 		final String joinpointIdentification = methodIdentification(method, targetClass, txAttr);
 
 		//声明式事务，每次需要通过方法来获取事物属性，在判断需不需要开启事物
 		if (txAttr == null || !(tm instanceof CallbackPreferringPlatformTransactionManager)) {
-			// Standard transaction demarcation with getTransaction and commit/rollback calls.
+			//创建事务
 			// 3. 获取TransactionInfo，包含了tm和TransactionStatus
 			TransactionInfo txInfo = createTransactionIfNecessary(tm, txAttr, joinpointIdentification);
 
@@ -359,7 +359,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 				throw ex;
 			}
 			finally {
-				// 6. 清理当前线程的事务相关信息
+				// 6. 清理当前线程的事务相关信息  并将挂起的线程恢复，前面有挂起，这里有恢复哦！
 				cleanupTransactionInfo(txInfo);
 			}
 
@@ -552,7 +552,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 
 		TransactionStatus status = null;
 		if (txAttr != null) {
-			if (tm != null) {
+			if (tm != null) {//获取事务状态信息  **getTransaction重要**包活设置一些事务的传播性
 				status = tm.getTransaction(txAttr);
 			}
 			else {
@@ -629,9 +629,10 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			if (logger.isTraceEnabled()) {
 				logger.trace("Completing transaction for [" + txInfo.getJoinpointIdentification() +
 						"] after exception: " + ex);
-			}
+			}//判断异常是否回滚。DefaultTransactionAttribute的rollbackOn里面这个里面只有RuntimeException与error才会发生回滚
 			if (txInfo.transactionAttribute != null && txInfo.transactionAttribute.rollbackOn(ex)) {
 				try {
+					//开始回滚了
 					txInfo.getTransactionManager().rollback(txInfo.getTransactionStatus());
 				}
 				catch (TransactionSystemException ex2) {

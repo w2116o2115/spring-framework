@@ -274,24 +274,23 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 
 			txObject.getConnectionHolder().setSynchronizedWithTransaction(true);
 			con = txObject.getConnectionHolder().getConnection();
-			//这里主要是根据definition对connection进行一些设置
+			//设置事务的隔离级别**prepareConnectionForTransaction**
 			Integer previousIsolationLevel = DataSourceUtils.prepareConnectionForTransaction(con, definition);
 			txObject.setPreviousIsolationLevel(previousIsolationLevel);
 
 			// Switch to manual commit if necessary. This is very expensive in some JDBC drivers,
 			// so we don't want to do it unnecessarily (for example if we've explicitly
 			// configured the connection pool to set it already).
-			if (con.getAutoCommit()) {
-				txObject.setMustRestoreAutoCommit(true);
+			if (con.getAutoCommit()) {//数据库的事务为自定提交，则进入   当前执行了sql之后就不会自动提交了。
+				txObject.setMustRestoreAutoCommit(true);//改为spring控制提交
 				if (logger.isDebugEnabled()) {
 					logger.debug("Switching JDBC Connection [" + con + "] to manual commit");
 				}
-				//开启事务，设置autoCommit为false
-				con.setAutoCommit(false);
+				con.setAutoCommit(false);//取消数据库的自动提交
 			}
 
 			prepareTransactionalConnection(con, definition);
-			//这里设置transactionActive为true，还记得签名判断是否存在的transaction吧？就是根据这个
+			//设置当前线程有事务，后续进来的线程判断的时候就可以按照这个来做判断了
 			txObject.getConnectionHolder().setTransactionActive(true);
 
 			int timeout = determineTimeout(definition);
@@ -318,7 +317,10 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 	@Override
 	protected Object doSuspend(Object transaction) {
 		DataSourceTransactionObject txObject = (DataSourceTransactionObject) transaction;
+		//把当前事务的connectionHolder数据库连接持有者清空。
 		txObject.setConnectionHolder(null);
+		//当前线程解绑datasource.
+		// 其实就是ThreadLocal移除对应变量（TransactionSynchronizationManager类中定义的private static final ThreadLocal<Map<Object, Object>> resources = new NamedThreadLocal<Map<Object, Object>>("Transactional resources");）
 		return TransactionSynchronizationManager.unbindResource(obtainDataSource());
 	}
 
