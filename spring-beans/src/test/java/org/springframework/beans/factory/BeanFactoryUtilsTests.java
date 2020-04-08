@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
-import org.springframework.cglib.proxy.NoOp;
 import org.springframework.core.io.Resource;
 import org.springframework.tests.sample.beans.AnnotatedBean;
 import org.springframework.tests.sample.beans.ITestBean;
@@ -94,13 +93,6 @@ public class BeanFactoryUtilsTests {
 		assertThat(this.listableBeanFactory.getBeanDefinitionCount() == 1).isTrue();
 		// Count minus duplicate
 		assertThat(BeanFactoryUtils.countBeansIncludingAncestors(this.listableBeanFactory) == 8).as("Should count 8 beans, not " + BeanFactoryUtils.countBeansIncludingAncestors(this.listableBeanFactory)).isTrue();
-	}
-
-	@Test
-	public void testHierarchicalNamesWithNoMatch() throws Exception {
-		List<String> names = Arrays.asList(
-				BeanFactoryUtils.beanNamesForTypeIncludingAncestors(this.listableBeanFactory, NoOp.class));
-		assertThat(names.size()).isEqualTo(0);
 	}
 
 	@Test

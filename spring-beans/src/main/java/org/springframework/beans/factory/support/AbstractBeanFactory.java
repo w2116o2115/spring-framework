@@ -282,6 +282,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		 */
 		if (sharedInstance != null && args == null) {
 			if (logger.isTraceEnabled()) {
+				//原型模式下是无法解决循环依赖的,直接抛异常
+				//a中有b的属性,b中有a属性
+				//当创建a时会去创建b,创建b时会去创建a直接就死循环了....
 				if (isSingletonCurrentlyInCreation(beanName)) {
 					logger.trace("Returning eagerly cached instance of singleton bean '" + beanName +
 							"' that is not fully initialized yet - a consequence of a circular reference");

@@ -1114,6 +1114,20 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 *
 	 * 当用户配置了 lookup-method 和 replace-method 时，Spring 需要对目标 bean 进行增强。
 	 * 在增强之前，需要做一些准备工作，也就是 prepareMethodOverrides 中的逻辑。
+	 *
+	 *
+	 * 在Spring容器中，单例模式的bean只会被创建一次，然后容器会缓存该单例bean的实例，等到第二次获取时，可以直接返回该bean的实例，
+	 * 而无需重新创建；原型模式的bean则是每次都会创建一个全新的bean，Spring容器并不会缓存该bean的实例以供下次使用。那么如果现在
+	 * 有一个单例模式的bean引用了一个原型模式的bean呢？我们不希望被引用的原型模式bean被缓存，那么这个时候就需要用到lookup-method注入。
+	 *
+	 * replaced-method
+	 * 主要作用就是替换方法体及其返回值
+	 * <!-- ====================replace-method属性注入begin==================== -->
+	 * <bean id="replaceDog" class="com.lyc.cn.day05.replaceMethod.ReplaceDog"/>
+	 * <bean id="originalDog" class="com.lyc.cn.day05.replaceMethod.OriginalDog">
+	 * 		<replaced-method name="sayHello" replacer="replaceDog"/>
+	 * </bean>
+	 * <!-- ====================replace-method属性注入end==================== -->
 	 */
 	public void prepareMethodOverrides() throws BeanDefinitionValidationException {
 		// Check that lookup methods exists.
