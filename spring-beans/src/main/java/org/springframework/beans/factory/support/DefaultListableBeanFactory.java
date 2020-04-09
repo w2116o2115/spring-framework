@@ -117,6 +117,9 @@ import org.springframework.util.StringUtils;
  * @see #addBeanPostProcessor
  * @see #getBean
  * @see #resolveDependency
+ *
+ * DefaultListableBeanFactory功能的实现是通过实现特定功能的接口来完成。
+ * AbstractAutowireCapableBeanFactory 实现属性的自动绑定功能。
  */
 @SuppressWarnings("serial")
 public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFactory
