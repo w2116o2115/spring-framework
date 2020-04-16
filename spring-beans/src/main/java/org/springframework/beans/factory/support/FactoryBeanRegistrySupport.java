@@ -99,36 +99,44 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 		 *   1. 单例 FactoryBean 生成的 bean 实例也认为是单例类型。需放入缓存中，供后续重复使用
 		 *   2. 非单例 FactoryBean 生成的 bean 实例则不会被放入缓存中，每次都会创建新的实例
 		 */
+
+		// <1> 为单例模式且缓存中存在
 		if (factory.isSingleton() && containsSingleton(beanName)) {
 			synchronized (getSingletonMutex()) {
-				// 从缓存中取 bean 实例，避免多次创建 bean 实例
+				// <1.2> 从缓存中获取指定的 factoryBean
 				Object object = this.factoryBeanObjectCache.get(beanName);
 				if (object == null) {
-					// 使用工厂对象中创建实例
+					// 为空，则从 FactoryBean 中获取对象
 					object = doGetObjectFromFactoryBean(factory, beanName);
-					// Only post-process and store if not put there already during getObject() call above
-					// (e.g. because of circular reference processing triggered by custom getBean calls)
+					// 从缓存中获取
 					Object alreadyThere = this.factoryBeanObjectCache.get(beanName);
 					if (alreadyThere != null) {
 						object = alreadyThere;
 					}
 					else {
+						// <1.3> 需要后续处理
 						// shouldPostProcess 等价于上一个方法中的 !synthetic，用于表示是否应用后置处理
 						if (shouldPostProcess) {
+							// 若该 Bean 处于创建中，则返回非处理对象，而不是存储它
 							if (isSingletonCurrentlyInCreation(beanName)) {
 								// Temporarily return non-post-processed object, not storing it yet..
 								return object;
 							}
+							// 单例 Bean 的前置处理  方法，用于添加标志，当前 bean 正处于创建中
 							beforeSingletonCreation(beanName);
 							try {
-								// 应用后置处理
+								// 对从 FactoryBean 获取的对象进行后处理
+								// 生成的对象将暴露给 bean 引用
+								// 方法，用于移除标记，当前 Bean 不处于创建中。
 								object = postProcessObjectFromFactoryBean(object, beanName);
+								//以上两个方法 他们记录着 Bean 的加载状态，是检测当前 Bean 是否处于创建中的关键之处，对解决 Bean 循环依赖起着关键作用。
 							}
 							catch (Throwable ex) {
 								throw new BeanCreationException(beanName,
 										"Post-processing of FactoryBean's singleton object failed", ex);
 							}
 							finally {
+								// 单例 Bean 的后置处理
 								afterSingletonCreation(beanName);
 							}
 						}
@@ -172,7 +180,7 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 
 		Object object;
 		try {
-			// if 分支的逻辑是 Java 安全方面的代码，可以忽略，直接看 else 分支的代码
+			// 需要权限验证，可以忽略，直接看 else 分支的代码
 			if (System.getSecurityManager() != null) {
 				AccessControlContext acc = getAccessControlContext();
 				try {

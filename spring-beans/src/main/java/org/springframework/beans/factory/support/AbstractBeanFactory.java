@@ -1913,9 +1913,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		}
 
 		/*
-		 * 如果上面的判断通过了，表明 beanInstance 可能是一个普通的 bean，也可能是一个
-		 * FactoryBean。如果是一个普通的 bean，这里直接返回 beanInstance 即可。如果是
-		 * FactoryBean，则要调用工厂方法生成一个 bean 实例。
+		 * 表明 beanInstance 是一个普通的bean，直接返回beanInstance
 		 */
 		if (!(beanInstance instanceof FactoryBean) || BeanFactoryUtils.isFactoryDereference(name)) {
 			return beanInstance;
@@ -1924,24 +1922,23 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		Object object = null;
 		if (mbd == null) {
 			/*
-			 * 如果 mbd 为空，则从缓存中加载 bean。FactoryBean 生成的单例 bean 会被缓存
-			 * 在 factoryBeanObjectCache 集合中，不用每次都创建
+			 * 若 BeanDefinition 为 null，则从缓存中加载 Bean 对象
 			 */
 			object = getCachedObjectForFactoryBean(beanName);
 		}
 		if (object == null) {
 			// 经过前面的判断，到这里可以保证 beanInstance 是 FactoryBean 类型的，所以可以进行类型转换
 			FactoryBean<?> factory = (FactoryBean<?>) beanInstance;
-			// 如果 mbd 为空，则判断是否存在名字为 beanName 的 BeanDefinition
+			// containsBeanDefinition 检测 beanDefinitionMap 也就是在所有bean配置项已经加载的类中
+			// 检测是否定义 beanName
 			if (mbd == null && containsBeanDefinition(beanName)) {
-				// 合并 BeanDefinition
+				// 将存储 XML 配置文件的 GenericBeanDefinition 转换为 RootBeanDefinition，
+				// 如果指定 BeanName 是子 Bean 的话同时会合并父类的相关属性
 				mbd = getMergedLocalBeanDefinition(beanName);
 			}
-			// synthetic 字面意思是"合成的"。通过全局查找，我发现在 AOP 相关的类中会将该属性设为 true。
-			// 所以我觉得该字段可能表示某个 bean 是不是被 AOP 增强过，也就是 AOP 基于原始类合成了一个新的代理类。
-			// 不过目前只是猜测，没有深究。如果有朋友知道这个字段的具体意义，还望不吝赐教
+			// 是否是用户定义的，而不是应用程序本身定义的
 			boolean synthetic = (mbd != null && mbd.isSynthetic());
-			// 调用 getObjectFromFactoryBean 方法继续获取实例
+			// 核心处理方法，使用 FactoryBean 获得 Bean 对象
 			object = getObjectFromFactoryBean(factory, beanName, !synthetic);
 		}
 		return object;

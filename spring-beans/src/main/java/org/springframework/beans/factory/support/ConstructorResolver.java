@@ -121,18 +121,20 @@ class ConstructorResolver {
 		BeanWrapperImpl bw = new BeanWrapperImpl();
 		this.beanFactory.initBeanWrapper(bw);
 
-		Constructor<?> constructorToUse = null;
-		ArgumentsHolder argsHolderToUse = null;
-		Object[] argsToUse = null;
+		Constructor<?> constructorToUse = null;// 构造函数
+		ArgumentsHolder argsHolderToUse = null;// 构造参数
+		Object[] argsToUse = null;// 构造参数
 
-		// 确定参数值列表（argsToUse）
+		// 确定构造参数
+		// 如果 getBean() 已经传递，则直接使用
 		if (explicitArgs != null) {
 			argsToUse = explicitArgs;
 		}
 		else {
+			// 尝试从缓存中获取
 			Object[] argsToResolve = null;
 			synchronized (mbd.constructorArgumentLock) {
-				// 获取已解析的构造方法
+				// 缓存中的构造函数或者工厂方法
 				constructorToUse = (Constructor<?>) mbd.resolvedConstructorOrFactoryMethod;
 				if (constructorToUse != null && mbd.constructorArgumentsResolved) {
 					// 获取已解析的构造方法参数列表
@@ -143,14 +145,17 @@ class ConstructorResolver {
 					}
 				}
 			}
+			// 缓存中存在,则解析存储在 BeanDefinition 中的参数
+			// 如给定方法的构造函数 A(int ,int )，则通过此方法后就会把配置文件中的("1","1")转换为 (1,1)
+			// 缓存中的值可能是原始值也有可能是最终值
 			if (argsToResolve != null) {
 				// 解析参数列表
 				argsToUse = resolvePreparedArguments(beanName, mbd, bw, constructorToUse, argsToResolve, true);
 			}
 		}
-
+		// 没有缓存，则尝试从配置文件中获取参数
 		if (constructorToUse == null || argsToUse == null) {
-			// Take specified constructors, if any.
+			// 如果 chosenCtors 未传入，则获取构造方法们
 			Constructor<?>[] candidates = chosenCtors;
 			if (candidates == null) {
 				Class<?> beanClass = mbd.getBeanClass();
@@ -178,9 +183,10 @@ class ConstructorResolver {
 				}
 			}
 
-			// Need to resolve the constructor.
+			// 是否需要解析构造器
 			boolean autowiring = (chosenCtors != null ||
 					mbd.getResolvedAutowireMode() == AutowireCapableBeanFactory.AUTOWIRE_CONSTRUCTOR);
+			// 用于承载解析后的构造函数参数的值
 			ConstructorArgumentValues resolvedValues = null;
 
 			int minNrOfArgs;
@@ -188,6 +194,7 @@ class ConstructorResolver {
 				minNrOfArgs = explicitArgs.length;
 			}
 			else {
+				// 从 BeanDefinition 中获取构造参数，也就是从配置文件中提取构造参数
 				ConstructorArgumentValues cargs = mbd.getConstructorArgumentValues();
 				resolvedValues = new ConstructorArgumentValues();
 				/*
@@ -203,13 +210,16 @@ class ConstructorResolver {
 				 */
 				minNrOfArgs = resolveConstructorArguments(beanName, mbd, bw, cargs, resolvedValues);
 			}
-
+			// 对构造函数进行排序处理
+			// public 构造函数优先参数数量降序，非public 构造函数参数数量降序
 			AutowireUtils.sortConstructors(candidates);
+			// 最小参数类型权重
 			int minTypeDiffWeight = Integer.MAX_VALUE;
 			Set<Constructor<?>> ambiguousConstructors = null;
 			LinkedList<UnsatisfiedDependencyException> causes = null;
-
+			// 迭代所有构造函数
 			for (Constructor<?> candidate : candidates) {
+				// 获取该构造函数的参数类型
 				Class<?>[] paramTypes = candidate.getParameterTypes();
 
 				/*
@@ -249,7 +259,7 @@ class ConstructorResolver {
 				if (paramTypes.length < minNrOfArgs) {
 					continue;
 				}
-
+				// 参数持有者 ArgumentsHolder 对象
 				ArgumentsHolder argsHolder;
 				if (resolvedValues != null) {
 					try {
@@ -324,13 +334,14 @@ class ConstructorResolver {
 				 * 变量目的：是将候选构造方法的参数列表类型与参数值列表类型的差异进行量化，通过量化
 				 * 后的数值筛选出最合适的构造方法。
 				 *
-				 * 讲完差异量，再来说说 mbd.isLenientConstructorResolution() 条件。
-				 * 官方的解释是：返回构造方法的解析模式，有宽松模式（lenient mode）和严格模式
-				 * （strict mode）两种类型可选。具体的细节没去研究，就不多说了。
+				 * isLenientConstructorResolution 判断解析构造函数的时候是否以宽松模式还是严格模式
+				 * 严格模式：解析构造函数时，必须所有的都需要匹配，否则抛出异常
+				 * 宽松模式：使用具有"最接近的模式"进行匹配
+				 * typeDiffWeight：类型差异权重
 				 */
 				int typeDiffWeight = (mbd.isLenientConstructorResolution() ?
 						argsHolder.getTypeDifferenceWeight(paramTypes) : argsHolder.getAssignabilityWeight(paramTypes));
-				// Choose this constructor if it represents the closest match.
+				// 如果它代表着当前最接近的匹配则选择其作为构造函数
 				if (typeDiffWeight < minTypeDiffWeight) {
 					constructorToUse = candidate;
 					argsHolderToUse = argsHolder;
