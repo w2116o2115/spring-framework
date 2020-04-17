@@ -91,8 +91,7 @@ public class BeanFactoryAdvisorRetrievalHelper {
 					if (logger.isTraceEnabled()) {
 						logger.trace("Skipping currently created advisor '" + name + "'");
 					}
-				}
-				else {
+				} else {
 					try {
 						/*
 						 * 调用 getBean 方法从容器中获取名称为 name 的 bean，
